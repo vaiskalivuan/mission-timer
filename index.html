@@ -58,6 +58,21 @@
   }
   .timer.warn { color: var(--accent); }
 
+  .timer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .sun-info {
+    font-family: "SF Mono", "Menlo", "Consolas", "Courier New", monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    color: var(--gray);
+    text-align: center;
+    user-select: none;
+  }
+
   .progress-container {
     position: relative;
     width: 100%;
@@ -155,7 +170,10 @@
 <canvas id="bg"></canvas>
 
 <div class="wrap">
-  <div class="timer" id="timerDisplay">25:00</div>
+  <div class="timer-block">
+    <div class="timer" id="timerDisplay">25:00</div>
+    <div class="sun-info" id="sunInfo">取得中…</div>
+  </div>
 
   <div class="progress-container">
     <div class="progress-track">
@@ -425,6 +443,44 @@
 
   updateDisplay();
   setButtons();
+
+  /* ---------------------------------------------------------
+   * 台北日出日落
+   * --------------------------------------------------------- */
+  var sunInfo = document.getElementById('sunInfo');
+  var SUN_API = 'https://api.open-meteo.com/v1/forecast?latitude=25.03&longitude=121.56&daily=sunrise,sunset&timezone=Asia/Taipei&forecast_days=1';
+
+  function extractHM(iso) {
+    var t = iso && iso.split('T')[1];
+    return t ? t.slice(0, 5) : '';
+  }
+
+  function loadSunInfo() {
+    var controller = ('AbortController' in window) ? new AbortController() : null;
+    var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 8000) : null;
+
+    fetch(SUN_API, controller ? { signal: controller.signal } : {})
+      .then(function (res) {
+        if (!res.ok) throw new Error('bad status');
+        return res.json();
+      })
+      .then(function (data) {
+        var sunrise = data && data.daily && data.daily.sunrise && data.daily.sunrise[0];
+        var sunset = data && data.daily && data.daily.sunset && data.daily.sunset[0];
+        var hmRise = extractHM(sunrise);
+        var hmSet = extractHM(sunset);
+        if (!hmRise || !hmSet) throw new Error('missing data');
+        sunInfo.textContent = '日出 ' + hmRise + ' ／ 日落 ' + hmSet;
+      })
+      .catch(function () {
+        sunInfo.textContent = '離線';
+      })
+      .then(function () {
+        if (timeoutId) clearTimeout(timeoutId);
+      });
+  }
+
+  loadSunInfo();
 })();
 </script>
 
