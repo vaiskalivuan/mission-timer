@@ -10,6 +10,7 @@
     --accent-dim: #7a3620;
     --gray: #9aa4b2;
     --gray-dim: #4a5563;
+    --danger: #ff3b30;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -56,7 +57,18 @@
     font-variant-numeric: tabular-nums;
     user-select: none;
   }
-  .timer.warn { color: var(--accent); }
+  .timer.warn {
+    color: var(--danger);
+    text-shadow: 0 0 34px rgba(255, 59, 48, 0.55);
+    animation: timerPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes timerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .timer.warn { animation: none; }
+  }
 
   .timer-block {
     display: flex;
@@ -93,8 +105,9 @@
     width: 0%;
     border-radius: 1px;
     background: var(--accent);
-    transition: width 0.4s linear;
+    transition: width 0.4s linear, background 0.3s ease;
   }
+  .progress-fill.warn { background: var(--danger); }
   .rocket {
     position: absolute;
     top: 50%;
@@ -106,12 +119,15 @@
     filter: drop-shadow(0 0 6px rgba(255, 140, 90, 0.7));
     user-select: none;
   }
+  .rocket.warn { filter: drop-shadow(0 0 9px rgba(255, 59, 48, 0.85)); }
   .rocket-icon { display: block; width: 100%; height: 100%; overflow: visible; }
   .rocket-icon .rk-flame  { fill: #ffb347; }
   .rocket-icon .rk-body   { fill: var(--accent); }
   .rocket-icon .rk-fin    { fill: var(--gray); }
   .rocket-icon .rk-window-outer { fill: #0b0f16; }
   .rocket-icon .rk-window-inner { fill: #bfe3ff; }
+  .rocket.warn .rk-body  { fill: var(--danger); }
+  .rocket.warn .rk-flame { fill: #ff8a3d; }
 
   .controls {
     display: flex;
@@ -392,9 +408,14 @@
     return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
 
+  var WARN_THRESHOLD = 5 * 60; // 剩 5 分鐘算快來不及
+
   function updateDisplay() {
     timerDisplay.textContent = format(remaining);
-    timerDisplay.classList.toggle('warn', remaining <= 60 && remaining > 0);
+    var isUrgent = remaining <= WARN_THRESHOLD && remaining > 0;
+    timerDisplay.classList.toggle('warn', isUrgent);
+    progressFill.classList.toggle('warn', isUrgent);
+    rocket.classList.toggle('warn', isUrgent);
 
     var pct = ((TOTAL - remaining) / TOTAL) * 100;
     progressFill.style.width = pct + '%';
